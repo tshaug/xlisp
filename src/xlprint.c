@@ -276,7 +276,7 @@ static void putqstring(xlValue fptr,xlValue str)
     for (i = 0; i < len; ++i)
 
         /* check for a control character */
-        if ((ch = xlGetString(str)[i]) < 040 || ch == '\\' || ch == '"') {
+        if ((ch = (unsigned char)xlGetString(str)[i]) < 040 || ch == '\\' || ch == '"') {
             xlPutC(fptr,'\\');
             switch (ch) {
             case '\033':

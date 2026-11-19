@@ -16,6 +16,9 @@ endif()
 add_executable(xlisp-repl)
 add_subdirectory(xlisp)
 
+add_executable(xlide-host host/xlide-host.c)
+target_link_libraries(xlide-host xlisp)
+
 include(CheckIPOSupported)
 check_ipo_supported(RESULT can_link_time_optimize)
 if(can_link_time_optimize)
@@ -30,7 +33,7 @@ endif()
 
 # The '.' ends up being relative to CMAKE_INSTALL_PREFIX.
 install(TARGETS
-    xlisp-repl
+    xlisp-repl xlide-host
     COMPONENT xlisp_component
     RUNTIME DESTINATION "./bin"
     LIBRARY DESTINATION "./lib"
@@ -58,6 +61,7 @@ install(FILES
     qquote.lsp
     xlinit.lsp
     xlisp.lsp
+    host/ide.lsp
     COMPONENT xlisp_component
     DESTINATION "./bin")
 
