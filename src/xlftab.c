@@ -394,6 +394,7 @@ static xlSubrDef subrtab[] = {
 {       "%VECTOR-BASE",                     xivbase                     },
 {       "%ADDRESS-OF",                      xiaddrof                    },
 {       "%FORMAT-ADDRESS",                  xifmtaddr                   },
+{       "%STACK-FRAMES",                    xstackframes                },
 #if 0
 {       "%GET-STACK-POINTER",               xGetStackPointer            },
 #endif

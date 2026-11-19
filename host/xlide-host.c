@@ -518,8 +518,8 @@ static void host_putc(int ch)
 /* send a message built from primitive arguments (see %IDE-SEND) */
 static void json_value(Buf *b,xlValue v)
 {
+    /* note: in xlisp #f and the empty list are both nil; both become null */
     if (v == xlTrue) buf_adds(b,"true");
-    else if (v == xlFalse) buf_adds(b,"false");
     else if (v == xlNil) buf_adds(b,"null");
     else if (xlFixnumP(v)) json_long(b,xlGetFixnum(v));
     else if (xlStringP(v)) json_string(b,xlGetString(v),(size_t)xlGetSLength(v));
@@ -533,6 +533,20 @@ static void json_value(Buf *b,xlValue v)
             v = xlCdr(v);
         }
         buf_addc(b,']');
+    }
+    else if (xlVectorP(v)) {
+        /* a vector of alternating key/value pairs is a JSON object */
+        xlFIXTYPE i, n = xlGetSize(v);
+        buf_addc(b,'{');
+        for (i = 0; i + 1 < n; i += 2) {
+            xlValue k = xlGetElement(v,i);
+            if (i) buf_addc(b,',');
+            if (xlStringP(k)) json_string(b,xlGetString(k),(size_t)xlGetSLength(k));
+            else buf_adds(b,"\"?\"");
+            buf_addc(b,':');
+            json_value(b,xlGetElement(v,i + 1));
+        }
+        buf_addc(b,'}');
     }
     else buf_adds(b,"null");
 }
@@ -613,12 +627,14 @@ static xlValue x_next_message(void)
     Msg *m;
     xlLastArg();
     flush_output(1);
+    if (!qhead) interrupt_flag = 0;     /* a stale interrupt must not hit the next eval */
     while (!qhead) {
         if (in_eof) {
             xlVal = xlCons(xlMakeCString("shutdown"),xlNil);
             return xlVal;
         }
         read_more(1);
+        if (!qhead) interrupt_flag = 0; /* interrupts for an idle host are ignored */
     }
     m = qhead;
     qhead = m->next;
@@ -734,7 +750,7 @@ int main(int argc,const char *argv[])
         json_long(&m,PROTOCOL_VERSION);
         buf_adds(&m,",\"xlisp\":");
         json_string(&m,"3.3",3);
-        buf_adds(&m,",\"capabilities\":[\"interrupt\",\"input\"]}");
+        buf_adds(&m,",\"capabilities\":[\"interrupt\",\"input\",\"stack\",\"source\"]}");
         send_buf(&m);
         free(m.p);
     }

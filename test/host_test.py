@@ -50,6 +50,30 @@ expect("64-bit fixnum", collect(["result"])[-1]["values"] == ["10000000000"])
 send(type="eval", id=4, text='"héllo 世界"')
 expect("utf-8 round trip", collect(["result"])[-1]["values"] == ['"héllo 世界"'])
 
+# the error message carries the call stack, innermost frame first
+send(type="eval", id=20, text="(define (g y) (let ((r (car y))) r)) (define (f x) (let ((s (g x))) s)) (f 5)")
+e = collect(["error"])[-1]
+names = [fr["name"] for fr in e["stack"]]
+expect("stack frames", names == ["g", "f"], e["stack"])
+expect("stack frame args", e["stack"][0]["args"] == [{"name": "y", "value": "5"}], e["stack"])
+send(type="cleanup"); collect(["aborted"])
+send(type="eval", id=21, text="(car 3)")
+e = collect(["error"])[-1]
+expect("no stack for a bare top-level error", not e["stack"], e["stack"])
+send(type="cleanup"); collect(["aborted"])
+
+# "source" of an eval is echoed in the result and in errors
+src = {"file": "a.lsp", "line": 12, "column": 3}
+send(type="eval", id=22, text="(+ 5 5)", source=src)
+r = collect(["result"])[-1]
+expect("source echoed in result", r["source"] == src and r["values"] == ["10"], r)
+send(type="eval", id=23, text="(car 4)", source=src)
+e = collect(["error"])[-1]
+expect("source echoed in error", e["source"] == src, e)
+send(type="cleanup"); collect(["aborted"])
+send(type="eval", id=24, text="(+ 6 6)")
+expect("no source when none sent", collect(["result"])[-1]["source"] is None)
+
 # error -> break level, evaluate in it, pop it
 send(type="eval", id=5, text="(car 5)")
 e = collect(["error"])[-1]
@@ -83,6 +107,11 @@ a = collect(["aborted"])[-1]
 expect("interrupt aborts a runaway evaluation", a["id"] == 11 and a["level"] == 0, a)
 send(type="eval", id=12, text="(+ 4 4)")
 expect("top level works after interrupt", collect(["result"])[-1]["values"] == ["8"])
+
+# an interrupt sent to an idle host is ignored
+send(type="interrupt"); time.sleep(0.2)
+send(type="eval", id=14, text="(+ 9 9)")
+expect("idle interrupt is ignored", collect(["result", "aborted"])[-1]["type"] == "result")
 
 # Lisp reads input
 send(type="eval", id=13, text="(read)")

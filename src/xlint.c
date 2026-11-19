@@ -252,6 +252,86 @@ void xlShowCallStack(int cmax)
         show_call(lastcode,lastframe);
 }
 
+/* build_frame_entry - build (name args env code) for one call; args is an alist */
+static xlValue build_frame_entry(xlValue code,xlValue frame)
+{
+    xlValue name = xlGetCName(code);
+    xlValue *names = NULL,vals;
+    xlFIXTYPE n = 0,i;
+
+    /* collect the variable names of the frame (they stay reachable from it) */
+    if (frame != xlNil) {
+        xlValue np;
+        for (np = xlGetEnvNames(frame); np != xlNil; np = xlCdr(np))
+            ++n;
+        if (n > 0) {
+            names = (xlValue *)malloc((size_t)n * sizeof(xlValue));
+            for (i = 0, np = xlGetEnvNames(frame); np != xlNil; np = xlCdr(np))
+                names[i++] = xlCar(np);
+        }
+    }
+
+    /* build the list backward: (name args env code), protected on the stack */
+    xlCheck(2);
+    xlPush(xlCons(code,xlNil));                         /* [1] result list */
+    xlSetTop(xlCons(frame,xlTop()));
+    xlPush(xlNil);                                      /* [0] args alist */
+    for (i = n - 1; i >= 0; --i) {
+        vals = xlGetEnvElement(frame,xlFIRSTENV + i);
+        xlValue pair = xlCons(names[i],vals);
+        xlSetTop(xlCons(pair,xlTop()));
+    }
+    free(names);
+    {
+        xlValue args = xlPop();
+        xlSetTop(xlCons(args,xlTop()));
+    }
+    xlSetTop(xlCons(name,xlTop()));
+    return xlPop();
+}
+
+/* xlGetCallFrames - the call stack as a list of (name args env code), innermost first */
+xlValue xlGetCallFrames(int cmax)
+{
+    struct { xlValue code,frame; } *calls;
+    xlValue lastcode = xlNil,lastframe = xlNil,*p;
+    int n = 0,i,cap = cmax > 0 ? cmax + 1 : 1;
+
+    /* first pass: pair each code object with its environment frame */
+    calls = malloc((size_t)cap * sizeof(*calls));
+    for (p = xlCSP; cmax > 0 && p > xlStkBase; p = xlCDUnmark(p)) {
+        xlCDispatch *d = (xlCDispatch *)p[-1];
+        if (d == &cd_code) {
+            if (lastcode != xlNil) {
+                calls[n].code = lastcode;
+                calls[n++].frame = lastframe;
+            }
+            lastcode = p[-2];
+            lastframe = xlNil;
+            --cmax;
+        }
+        else if (d == &cd_frame) {
+            lastframe = (xlValue)&p[-((int)xlNODEWORDS + 1)];
+            if (xlMovedStackEnvironmentP(lastframe))
+                lastframe = xlGetForwardingAddr(lastframe);
+        }
+    }
+    if (lastcode != xlNil) {
+        calls[n].code = lastcode;
+        calls[n++].frame = lastframe;
+    }
+
+    /* second pass: build the list from the outermost call inward */
+    xlCheck(1);
+    xlPush(xlNil);
+    for (i = n - 1; i >= 0; --i) {
+        xlValue entry = build_frame_entry(calls[i].code,calls[i].frame);
+        xlSetTop(xlCons(entry,xlTop()));
+    }
+    free(calls);
+    return xlPop();
+}
+
 /* unwind_restore - restore an unwind frame after invoking an unwind-protect cleanup */
 static void unwind_restore(void)
 {

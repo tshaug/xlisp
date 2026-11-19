@@ -1984,6 +1984,18 @@ void xshowstack(void)
     xlMVReturn(0);
 }
 
+/* xstackframes - built-in function '%stack-frames' */
+xlValue xstackframes(void)
+{
+    int levels = 100;
+    if (xlMoreArgsP()) {
+        xlVal = xlGetArgFixnum();
+        levels = (int)xlGetFixnum(xlVal);
+    }
+    xlLastArg();
+    return xlGetCallFrames(levels);
+}
+
 /* xshowcontrolstack - built-in function 'show-control-stack' */
 void xshowcontrolstack(void)
 {
