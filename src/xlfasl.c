@@ -67,8 +67,8 @@ xlValue xfaslwriteprocedure(void)
 static int faslwritecode(xlValue fptr,xlValue code)
 {
     xlValue bytecodes = xlGetBCode(code);
-    long nbytes = xlGetSLength(bytecodes);
-    long nlits = xlGetSize(code);
+    xlFIXTYPE nbytes = xlGetSLength(bytecodes);
+    xlFIXTYPE nlits = xlGetSize(code);
     char buf[100];
     long i;
     
@@ -82,7 +82,7 @@ static int faslwritecode(xlValue fptr,xlValue code)
     xlNewline(fptr);
 
     /* write the code object size and number of bytecodes */
-    sprintf(buf,"%ld %ld\n",nlits - xlFIRSTLIT,nbytes);
+    sprintf(buf,"%" PRIdPTR " %" PRIdPTR "\n",nlits - xlFIRSTLIT,nbytes);
     xlPutStr(fptr,buf);
 
     /* write the bytecodes */
@@ -173,7 +173,7 @@ xlValue faslread(xlValue fptr)
 /* faslreadcode - read a code object from a fasl file */
 static xlValue faslreadcode(xlValue fptr)
 {
-    long nlits,nbytes,i;
+    xlFIXTYPE nlits,nbytes,i;
     xlValue val;
     
     /* read the function name and argument names */

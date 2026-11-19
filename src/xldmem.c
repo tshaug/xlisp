@@ -545,7 +545,7 @@ xlEXPORT void xlGC(void)
 #ifdef DEBUG_GC
 /*if ((gccalls % 10) == 0) */
 { char buf[20];
-  sprintf(buf,"\n[GC %ld",gccalls);
+  sprintf(buf,"\n[GC %" PRIdPTR,gccalls);
   xlStdPutStr(buf);
 }
 #endif

@@ -14,6 +14,8 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <time.h>
+#include <stdint.h>
+#include <inttypes.h>
 
 /* xlAFMT       printf format for addresses ("%x") */
 /* xlOFFTYPE    number the size of an address (int) */
@@ -44,20 +46,20 @@
 #define xlAFMT          "%p"
 #endif
 #ifndef xlOFFTYPE
-#define xlOFFTYPE       long
+#define xlOFFTYPE       intptr_t
 #endif
 #ifndef xlFIXTYPE
-#define xlFIXTYPE       long
-typedef unsigned long   xlUFIXTYPE;
+#define xlFIXTYPE       intptr_t
+typedef uintptr_t         xlUFIXTYPE;
 #endif
 #ifndef xlICNV
-#define xlICNV(n)       atol(n)
+#define xlICNV(n)       ((xlFIXTYPE)strtoll((n),NULL,10))
 #endif
 #ifndef xlIFMT
-#define xlIFMT          "%ld"
+#define xlIFMT          "%" PRIdPTR
 #endif
 #ifndef xlXFMT
-#define xlXFMT          "%lx"
+#define xlXFMT          "%" PRIxPTR
 #endif
 #ifndef xlFLOTYPE
 #define xlFLOTYPE       double

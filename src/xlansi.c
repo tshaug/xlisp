@@ -106,7 +106,7 @@ xlEXPORT void xlosInfo(void)
 {
     extern xlFIXTYPE xlNFree,xlGCCalls,xlTotal;
     char buf[80];
-    sprintf(buf,"\n[ Free: %ld, GC calls: %ld, Total: %ld ]",xlNFree,xlGCCalls,xlTotal);
+    sprintf(buf,"\n[ Free: %" PRIdPTR ", GC calls: %" PRIdPTR ", Total: %" PRIdPTR " ]",xlNFree,xlGCCalls,xlTotal);
     xlErrPutStr(buf);
 }
 

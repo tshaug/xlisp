@@ -10,6 +10,7 @@
 #include <conio.h>
 #include <time.h>
 #include <signal.h>
+#include <io.h>
 #include <sys/stat.h>
 #include "xlisp.h"
 
@@ -20,7 +21,7 @@ static int xgetc(void);
 static void xputc(int ch);
 
 /* local variables */
-static xlValue s_usestdio = NULL;
+static int usestdio = 0;   /* use stdio when stdin/stdout is not a console */
 static char progpath[LBSIZE+1] = "";
 static char lbuf[LBSIZE+1];
 static int lpos[LBSIZE];
@@ -41,19 +42,20 @@ xlXSubrDef xlosXSubrTab[] = {
 {0,0}};
 
 /* osloadpath - return the load path */
-static char *osloadpath(void)
+static const char *osloadpath(void)
 {
-    char *path;
+    const char *path;
     if ((path = getenv("XLPATH")) == NULL)
         path = progpath;
     return path;
 }
 
 /* osparsepath - parse a path string */
-static char *osparsepath(char **pp)
+static const char *osparsepath(const char **pp)
 {
     static char buf[256];
-    char *src,*dst;
+    const char *src;
+    char *dst;
     
     /* find the next directory in the path */
     for (src = *pp, dst = buf; *src != '\0'; *dst++ = *src++)
@@ -111,7 +113,7 @@ static int ostgetc(void)
     int ch;
 
     /* check for stdio input */
-    if (s_usestdio && xlGetValue(s_usestdio) != xlFalse)
+    if (usestdio)
         return getchar();
     
     /* check for a buffered character */
@@ -177,7 +179,7 @@ static void ostputc(int ch)
     xlosCheck();
 
     /* check for stdio output */
-    if (s_usestdio && xlGetValue(s_usestdio) != xlFalse) {
+    if (usestdio) {
        if (ch == '\n')
             lposition = 0;
        else
@@ -214,10 +216,8 @@ static void ostflush(void)
 /* ostcheck - check for control characters during execution */
 static int ostcheck(void)
 {
-    if (s_usestdio && xlGetValue(s_usestdio) == xlFalse)
-	return kbhit() ? getch() : 0;
-    else
-        return 0;
+    /* keyboard polling is disabled, as it always was (the old flag was never set) */
+    return 0;
 }
 
 /* osflushoutput - flush the output buffer */
@@ -305,6 +305,9 @@ xlEXPORT xlCallbacks *xlDefaultCallbacks(const char *programPath)
         &&  strcmp(&progpath[len - 5],"\\bin\\") == 0)
             progpath[len - 4] = '\0';
     }
+
+    /* use plain stdio when not attached to a console (pipes, files, hosts) */
+    usestdio = !_isatty(_fileno(stdin)) || !_isatty(_fileno(stdout));
 
     /* setup the callbacks */
     callbacks.loadPath = osloadpath;

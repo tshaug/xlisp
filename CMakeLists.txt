@@ -7,8 +7,11 @@ project(XLisp
 add_library(xlisp "")
 add_subdirectory(src)
 
-add_library(ext SHARED "")
-add_subdirectory(ext)
+option(XLISP_BUILD_EXT "Build the sample extension library" OFF)
+if(XLISP_BUILD_EXT)
+    add_library(ext SHARED "")
+    add_subdirectory(ext)
+endif()
 
 add_executable(xlisp-repl)
 add_subdirectory(xlisp)
@@ -17,7 +20,6 @@ include(CheckIPOSupported)
 check_ipo_supported(RESULT can_link_time_optimize)
 if(can_link_time_optimize)
     set_target_properties(xlisp PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
-    set_target_properties(ext PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
     set_target_properties(xlisp-repl PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
 endif()
 
@@ -28,7 +30,7 @@ endif()
 
 # The '.' ends up being relative to CMAKE_INSTALL_PREFIX.
 install(TARGETS
-    xlisp-repl ext
+    xlisp-repl
     COMPONENT xlisp_component
     RUNTIME DESTINATION "./bin"
     LIBRARY DESTINATION "./lib"

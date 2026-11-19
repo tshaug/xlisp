@@ -1776,7 +1776,7 @@ xlValue xgensym(void)
     xlLastArg();
 
     /* create the pname of the new symbol */
-    sprintf(sym,"%s%ld",gsprefix,gsnumber++);
+    sprintf(sym,"%s%" PRIdPTR,gsprefix,gsnumber++);
 
     /* make a symbol with this print name */
     return xlMakeSymbol(xlMakeCString(sym));

@@ -141,10 +141,10 @@ int xlDecodeInstruction(xlValue fptr,xlValue code,xlFIXTYPE lc,xlValue env)
     /* show the address and opcode */
     if ((tmp = xlGetCName(code)) == xlNil) {
         sprintf(buf,xlAFMT,code); xlPutStr(fptr,buf);
-        sprintf(buf,":%04lx %02x ",lc,*cp);
+        sprintf(buf,":%04" PRIxPTR " %02x ",lc,*cp);
     }
     else
-        sprintf(buf,"%s:%04lx %02x ",xlGetString(xlGetPName(tmp)),lc,*cp);
+        sprintf(buf,"%s:%04" PRIxPTR " %02x ",xlGetString(xlGetPName(tmp)),lc,*cp);
     xlPutStr(fptr,buf);
 
     /* display the operands */
